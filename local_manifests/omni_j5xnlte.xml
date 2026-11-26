@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- OmniROM 7.1.2 for Samsung Galaxy J5 2016 (SM-J510FN / j5xnlte) -->
+<manifest>
+  <remote name="gh" fetch="https://github.com" />
+
+  <!-- Omni's stock HALs have no msm8916 support: swap in LineageOS CAF msm8916 HALs at the same paths -->
+  <remove-project name="android_hardware_qcom_display" />
+  <remove-project name="android_hardware_qcom_audio" />
+  <remove-project name="android_hardware_qcom_media" />
+  <remove-project name="android_hardware_ril" />
+  <project path="hardware/qcom/display" name="LineageOS/android_hardware_qcom_display" remote="gh" revision="cm-14.1-caf-8916" />
+  <project path="hardware/qcom/audio"   name="LineageOS/android_hardware_qcom_audio"   remote="gh" revision="cm-14.1-caf-8916" />
+  <project path="hardware/qcom/media"   name="LineageOS/android_hardware_qcom_media"   remote="gh" revision="cm-14.1-caf-8916" />
+  <project path="hardware/ril"          name="LineageOS/android_hardware_ril"          remote="gh" revision="cm-14.1-caf" />
+
+  <!-- Device trees (j5xnlte itself comes from this repo, copied in by the workflow) -->
+  <project path="device/samsung/j5-common"      name="Galaxy-MSM8916/android_device_samsung_j5-common"      remote="gh" revision="cm-14.1" />
+  <project path="device/samsung/msm8916-common" name="Galaxy-MSM8916/android_device_samsung_msm8916-common" remote="gh" revision="cm-14.1" />
+  <project path="device/samsung/qcom-common"    name="LineageOS/android_device_samsung_qcom-common"         remote="gh" revision="cm-14.1" />
+  <project path="device/qcom/common"            name="LineageOS/android_device_qcom_common"                 remote="gh" revision="cm-14.1" />
+  <project path="device/qcom/sepolicy"          name="LineageOS/android_device_qcom_sepolicy"               remote="gh" revision="cm-14.1" />
+
+  <!-- Kernel (requested: Dyeide) -->
+  <project path="kernel/samsung/msm8916" name="Dyeide/android_kernel_samsung_msm8916" remote="gh" revision="cm-14.1" />
+
+  <!-- Proprietary blobs -->
+  <project path="vendor/samsung" name="Galaxy-MSM8916/proprietary_vendor_samsung" remote="gh" revision="cm-14.1" />
+
+  <!-- Dependencies -->
+  <project path="hardware/samsung"                  name="LineageOS/android_hardware_samsung"                  remote="gh" revision="cm-14.1" />
+  <project path="packages/resources/devicesettings" name="LineageOS/android_packages_resources_devicesettings" remote="gh" revision="cm-14.1" />
+  <project path="external/sony/boringssl-compat"    name="LineageOS/android_external_sony_boringssl-compat"    remote="gh" revision="cm-14.1" />
+  <project path="external/stlport"                  name="LineageOS/android_external_stlport"                  remote="gh" revision="cm-14.1" />
+</manifest>

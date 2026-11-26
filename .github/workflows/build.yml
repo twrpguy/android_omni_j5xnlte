@@ -1,0 +1,127 @@
+name: Build OmniROM 7.1.2 (j5xnlte)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "make target (bacon = flashable zip, bootimage = kernel only)"
+        default: bacon
+        required: true
+  push:
+    branches: [main]
+    paths-ignore: ["README.md"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      TARGET: ${{ github.event.inputs.target || 'bacon' }}
+    steps:
+      - name: Free up disk space (merge / and /mnt)
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 12288
+          swap-size-mb: 8192
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+      - uses: actions/checkout@v4
+        with:
+          path: port
+
+      - name: Install repo
+        run: |
+          mkdir -p ~/bin
+          curl -sSL https://storage.googleapis.com/git-repo-downloads/repo -o ~/bin/repo
+          chmod +x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
+          git config --global user.name  "github-actions"
+          git config --global user.email "actions@github.com"
+          git config --global color.ui false
+          df -h .
+
+      - name: Sync OmniROM android-7.1 (shallow)
+        run: |
+          mkdir -p src && cd src
+          repo init -u https://github.com/omnirom/android -b android-7.1 --depth=1 \
+            -g default,-mips,-darwin,-notdefault --no-clone-bundle
+          mkdir -p .repo/local_manifests
+          cp ../port/local_manifests/*.xml .repo/local_manifests/
+          repo sync -c -j16 --no-tags --no-clone-bundle --optimized-fetch --force-sync --fail-fast \
+            || repo sync -c -j4 --no-tags --no-clone-bundle --force-sync
+          df -h .
+
+      - name: Apply port patches
+        run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
+
+      - name: Restore ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ccache
+          key: ccache-${{ github.run_id }}
+          restore-keys: ccache-
+
+      - name: Build (Ubuntu 18.04 container, JDK 8 + Python 2)
+        id: build
+        run: |
+          mkdir -p ccache
+          docker run --rm -v "$GITHUB_WORKSPACE:/w" -w /w/src \
+            -e TARGET="$TARGET" -e CCACHE_DIR=/w/ccache \
+            ubuntu:18.04 bash /w/port/scripts/docker-build.sh
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ccache
+          key: ccache-${{ github.run_id }}
+
+      - name: Show error summary
+        if: failure()
+        run: |
+          {
+            echo '## Build failed — first errors'
+            echo '```'
+            grep -nE "error:|Error [0-9]|FAILED:|No rule to make target|\*\*\*" src/build.log | head -60 || true
+            echo '```'
+            echo '## Last 60 lines'
+            echo '```'
+            tail -60 src/build.log || true
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          grep -nE "error:|FAILED:|No rule to make target|\*\*\*" src/build.log | head -300 > error-excerpt.txt || true
+          tail -400 src/build.log >> error-excerpt.txt || true
+
+      - name: Upload error log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-log
+          path: error-excerpt.txt
+
+      - name: Publish release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: omni-7.1.2-j5xnlte-${{ github.run_number }}
+          name: OmniROM 7.1.2 J510FN build ${{ github.run_number }}
+          prerelease: true
+          body: |
+            Unofficial OmniROM 7.1.2 for Samsung Galaxy J5 2016 (SM-J510FN, j5xnlte).
+            Flash the zip in TWRP after a full wipe (system, data, cache, dalvik).
+            recovery.img is OmniROM's TWRP built from the same tree.
+          files: |
+            src/out/target/product/j5xnlte/omni-*.zip
+            src/out/target/product/j5xnlte/boot.img
+            src/out/target/product/j5xnlte/recovery.img
