@@ -7,6 +7,7 @@ ninja, cprefix, real = sys.argv[1:4]
 goal = sys.argv[4] if len(sys.argv) > 4 else 'bacon'
 deps, seen_files = {}, set()
 def unesc(t): return t.replace('$ ', ' ').replace('$:', ':').replace('$$', '$')
+def fix(p): return real + p[len(cprefix):] if p.startswith(cprefix + '/') else p
 def split(s): return [unesc(t) for t in re.split(r'(?<!\$) ', s) if t]
 def parse(path):
     if path in seen_files: return
@@ -19,7 +20,7 @@ def parse(path):
                 buf += line[:-1]; continue
             line, buf = buf + line, ''
             if line.startswith(('subninja ', 'include ')):
-                parse(line.split(' ', 1)[1].strip().replace(cprefix, real, 1)); continue
+                parse(fix(line.split(' ', 1)[1].strip())); continue
             if not line.startswith('build '): continue
             m = re.match(r'build (.*?)(?<!\$): (\S+)(.*)', line)
             if not m: continue
@@ -36,6 +37,6 @@ while todo:
         if i in done: continue
         done.add(i)
         if i in deps: todo.append(i)
-        elif not os.path.exists(i.replace(cprefix, real, 1)): missing[i] = t
+        elif not os.path.exists(fix(i)): missing[i] = t
 for i in sorted(missing): print(f'{i}\n    needed by {missing[i]}')
 print(f'\n{len(missing)} missing input(s) reachable from {goal}')

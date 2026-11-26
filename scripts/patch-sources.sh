@@ -23,6 +23,9 @@ echo ">> Removing modules that need the LineageOS SDK (absent in Omni)"
 sed -i '/SamsungDoze/d; /FlipFlap/d' device/samsung/j5-common/product/*.mk
 sed -i '/^\s*Snap\s*\\\?\s*$/d' device/samsung/j5-common/product/camera.mk || true
 
+echo ">> Pointing LineageOS CAF variant paths at the in-place HALs"
+sed -i 's#hardware/qcom/audio-caf/msm8916#hardware/qcom/audio#' device/samsung/msm8916-common/board/qcom-audio.mk
+
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
 sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
