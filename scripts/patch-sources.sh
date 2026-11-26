@@ -31,6 +31,26 @@ python3 "$PORT_DIR/scripts/filter-overlays.py" \
   device/samsung/j5xnlte/overlay device/samsung/j5-common/overlay \
   device/samsung/msm8916-common/overlay device/samsung/qcom-common/overlay
 
+echo ">> Lineage-only APIs used by the msm8916 HALs"
+# CM-only sepolicy test dir (its type is declared in vendor/cm)
+sed -i '/device\/qcom\/sepolicy\/test/d' device/qcom/sepolicy/sepolicy.mk
+# Samsung CameraParametersExtra macros trip -Werror=unused-parameter
+grep -q 'Wno-unused-parameter' frameworks/av/camera/Android.mk || \
+  sed -i '0,/^LOCAL_MODULE:= *libcamera_client/s//LOCAL_CFLAGS += -Wno-unused-parameter\nLOCAL_MODULE:= libcamera_client/' frameworks/av/camera/Android.mk
+grep -n 'Wno-unused-parameter' frameworks/av/camera/Android.mk
+# audio_is_offload_pcm() is a Lineage system/media helper (PCM offload is a Lineage format)
+grep -q 'omni-compat audio_is_offload_pcm' hardware/qcom/audio/hal/audio_hw.c || \
+  sed -i '0,/^#include "audio_hw.h"/s//#include "audio_hw.h"\n\/* omni-compat audio_is_offload_pcm *\/\nstatic inline bool audio_is_offload_pcm(audio_format_t f) { (void)f; return false; }/' hardware/qcom/audio/hal/audio_hw.c
+grep -n 'omni-compat' hardware/qcom/audio/hal/audio_hw.c
+# android_set_rt_ioprio() is a Lineage libcutils addition (only an I/O priority tweak)
+sed -i 's/^\(\s*\)android_set_rt_ioprio(0, 1);/\1\/* omni: android_set_rt_ioprio unavailable *\//' hardware/qcom/display/libhwcomposer/hwc_vsync.cpp
+# qcom power HAL: drop Lineage's power-profile extension (hint/feature ids + getFeature)
+for f in device/qcom/common/power/power.c device/qcom/common/power/power-8916.c; do
+  grep -q 'omni-compat' "$f" || sed -i '0,/^#include /s//\/* omni-compat *\/\n#ifndef POWER_HINT_SET_PROFILE\n#define POWER_HINT_SET_PROFILE 0x00000111\n#endif\n#ifndef POWER_FEATURE_SUPPORTED_PROFILES\n#define POWER_FEATURE_SUPPORTED_PROFILES 0x00001000\n#endif\n#include /' "$f"
+done
+sed -i '/^\s*\.setFeature = set_feature,\s*$/{N;s/,\n\s*\.getFeature = get_feature/\n/}' device/qcom/common/power/power.c
+grep -n 'getFeature\|setFeature' device/qcom/common/power/power.c
+
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
 sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
@@ -40,6 +60,29 @@ RILJ=$TEL/src/java/com/android/internal/telephony/RIL.java
 PF=$TEL/src/java/com/android/internal/telephony/PhoneFactory.java
 # Open RIL.java up so the device RIL subclass can override its handlers
 sed -i -E 's/^(    |        )private /\1protected /' "$RILJ"
+
+# RIL must be subclassable, and needs Lineage's mQANElements (Samsung modems
+# return 6 strings per network in a scan instead of 4)
+python3 - "$RILJ" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+s = s.replace('public final class RIL extends BaseCommands', 'public class RIL extends BaseCommands', 1)
+if 'mQANElements' not in s:
+    s = s.replace('    protected Integer mInstanceId;',
+        '    protected Integer mInstanceId;\n'
+        '    protected int mQANElements = SystemProperties.getInt("ro.ril.telephony.mqanelements", 4);', 1)
+    i = s.index('responseOperatorInfos(Parcel p) {')
+    j = s.index('return ret;', i)
+    body = s[i:j]
+    body = (body.replace('strings.length % 4 != 0', 'strings.length % mQANElements != 0')
+                .replace('expected multible of 4', 'expected multiple of " + mQANElements + "')
+                .replace('strings.length / 4', 'strings.length / mQANElements')
+                .replace('i += 4', 'i += mQANElements'))
+    s = s[:i] + body + s[j:]
+assert 'mQANElements' in s and 'public class RIL ' in s
+open(p, 'w').write(s)
+PY
 
 python3 - "$PF" <<'PY'
 import re, sys

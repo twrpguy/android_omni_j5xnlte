@@ -52,3 +52,6 @@ TARGET_PROVIDES_WCNSS_QMI := true
 # Nougat's envsetup only puts arm-eabi-4.9 on PATH, but only 4.8 is in the tree
 KERNEL_TOOLCHAIN := $(ANDROID_BUILD_TOP)/prebuilts/gcc/$(HOST_PREBUILT_TAG)/arm/arm-eabi-4.8/bin
 KERNEL_TOOLCHAIN_PREFIX := arm-eabi-
+
+# The CAF policy_hal targets Lineage's AudioPolicyMix API; use AOSP's policy manager
+USE_CUSTOM_AUDIO_POLICY := 0
