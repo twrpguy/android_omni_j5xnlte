@@ -32,8 +32,9 @@ python3 "$PORT_DIR/scripts/filter-overlays.py" \
   device/samsung/msm8916-common/overlay device/samsung/qcom-common/overlay
 
 echo ">> Lineage-only APIs used by the msm8916 HALs"
-# CM-only sepolicy test dir (its type is declared in vendor/cm)
-sed -i '/device\/qcom\/sepolicy\/test/d' device/qcom/sepolicy/sepolicy.mk
+# qti-testscripts.te uses a type only vendor/cm declares. Keep the rest of the
+# test dir: qcom common file_contexts labels /system/bin/sns.* with its types.
+rm -f device/qcom/sepolicy/test/qti-testscripts.te
 # Samsung CameraParametersExtra macros trip -Werror=unused-parameter
 grep -q 'Wno-unused-parameter' frameworks/av/camera/Android.mk || \
   sed -i '0,/^LOCAL_MODULE:= *libcamera_client/s//LOCAL_CFLAGS += -Wno-unused-parameter\nLOCAL_MODULE:= libcamera_client/' frameworks/av/camera/Android.mk
