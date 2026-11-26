@@ -9,6 +9,18 @@
   <project path="frameworks/base" name="omnirom-legacy/android_frameworks_base" remote="gh" revision="android-7.1" groups="pdk-cw-fs" />
   <project path="system/core"     name="omnirom-legacy/android_system_core"     remote="gh" revision="android-7.1" groups="pdk" />
 
+  <!-- These Omni apps were deleted from GitHub. Settings compiles OmniGears in,
+       so take an unmodified fork (same head as Omni's last android-7.1 commit);
+       the rest are optional extras and are dropped. -->
+  <remove-project name="android_packages_apps_OmniGears" />
+  <project path="packages/apps/OmniGears" name="Dark-OS/android_packages_apps_OmniGears" remote="gh" revision="android-7.1" />
+  <remove-project name="android_packages_apps_OmniClock" />
+  <remove-project name="android_packages_services_OmniJaws" />
+  <remove-project name="android_packages_apps_OmniSubs" />
+  <remove-project name="android_packages_apps_OmniStyle" />
+  <remove-project name="android_packages_apps_OmniSwitch" />
+  <remove-project name="android_packages_apps_OpenDelta" />
+
   <!-- Omni's stock HALs have no msm8916 support: swap in LineageOS CAF msm8916 HALs at the same paths -->
   <remove-project name="android_hardware_qcom_display" />
   <remove-project name="android_hardware_qcom_audio" />

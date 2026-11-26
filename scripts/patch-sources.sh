@@ -22,6 +22,9 @@ rm -f device/samsung/qcom-common/doze/Android.mk
 sed -i '/SamsungDoze/d; /FlipFlap/d' device/samsung/j5-common/product/*.mk
 sed -i '/^\s*Snap\s*\\\?\s*$/d' device/samsung/j5-common/product/camera.mk || true
 
+echo ">> Dropping Omni apps whose source no longer exists on GitHub"
+sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
+
 echo ">> Telephony: let Omni load ro.telephony.ril_class (SamsungQcomRIL)"
 TEL=frameworks/opt/telephony
 RILJ=$TEL/src/java/com/android/internal/telephony/RIL.java
