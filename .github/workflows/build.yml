@@ -75,7 +75,7 @@ jobs:
       - name: Build (Ubuntu 18.04 container, JDK 8 + Python 2)
         id: build
         run: |
-          mkdir -p ccache tmp
+          mkdir -p ccache tmp && chmod 1777 tmp
           # /tmp on the big build volume: OTA packaging unpacks the whole
           # target-files zip there, which overflows the small root disk
           docker run --rm -v "$GITHUB_WORKSPACE:/w" -v "$GITHUB_WORKSPACE/tmp:/tmp" -w /w/src \
