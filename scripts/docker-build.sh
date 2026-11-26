@@ -17,6 +17,8 @@ sed -i 's/^\(jdk.tls.disabledAlgorithms=\)SSLv3, TLSv1, TLSv1.1,/\1SSLv3,/' \
 git config --global --add safe.directory '*'
 
 export USE_CCACHE=1
+# Keep building past failures so one run reports up to 20 independent errors
+export NINJA_ARGS="-k 20"
 ccache -M 4G
 export ANDROID_JACK_VM_ARGS="-Dfile.encoding=UTF-8 -XX:+TieredCompilation -Xmx6g"
 export JACK_SERVER_VM_ARGUMENTS="$ANDROID_JACK_VM_ARGS"
