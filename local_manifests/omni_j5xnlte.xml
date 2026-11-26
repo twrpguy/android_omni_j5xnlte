@@ -3,6 +3,12 @@
 <manifest>
   <remote name="gh" fetch="https://github.com" />
 
+  <!-- omnirom deleted android-7.1 of these two; the omnirom-legacy archive still has them -->
+  <remove-project name="android_frameworks_base" />
+  <remove-project name="android_system_core" />
+  <project path="frameworks/base" name="omnirom-legacy/android_frameworks_base" remote="gh" revision="android-7.1" groups="pdk-cw-fs" />
+  <project path="system/core"     name="omnirom-legacy/android_system_core"     remote="gh" revision="android-7.1" groups="pdk" />
+
   <!-- Omni's stock HALs have no msm8916 support: swap in LineageOS CAF msm8916 HALs at the same paths -->
   <remove-project name="android_hardware_qcom_display" />
   <remove-project name="android_hardware_qcom_audio" />
