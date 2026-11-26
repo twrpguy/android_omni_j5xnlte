@@ -17,8 +17,9 @@ if [ ! -d vendor/samsung/j5xnlte ]; then
 fi
 
 echo ">> Removing modules that need the LineageOS SDK (absent in Omni)"
-rm -f hardware/samsung/AdvancedDisplay/Android.mk
-rm -f device/samsung/qcom-common/doze/Android.mk
+# Emptied, not deleted: hardware/samsung/Android.mk includes these paths by name
+: > hardware/samsung/AdvancedDisplay/Android.mk
+: > device/samsung/qcom-common/doze/Android.mk
 sed -i '/SamsungDoze/d; /FlipFlap/d' device/samsung/j5-common/product/*.mk
 sed -i '/^\s*Snap\s*\\\?\s*$/d' device/samsung/j5-common/product/camera.mk || true
 

@@ -13,6 +13,9 @@ apt-get install -y -qq openjdk-8-jdk python git-core gnupg flex bison gperf buil
 sed -i 's/^\(jdk.tls.disabledAlgorithms=\)SSLv3, TLSv1, TLSv1.1,/\1SSLv3,/' \
   /etc/java-8-openjdk/security/java.security || true
 
+# Sources are owned by the runner user, the container runs as root
+git config --global --add safe.directory '*'
+
 export USE_CCACHE=1
 ccache -M 4G
 export ANDROID_JACK_VM_ARGS="-Dfile.encoding=UTF-8 -XX:+TieredCompilation -Xmx6g"
