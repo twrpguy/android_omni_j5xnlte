@@ -41,3 +41,6 @@ project-path-for = $(strip $(if $(filter recovery,$(1)),bootable/recovery,$(if $
 
 # libhealthd.cm no longer exists anywhere; use AOSP's board library
 BOARD_HAL_STATIC_LIBRARIES := libhealthd.default
+
+# Omni has no vendor/qcom/opensource/cryptfs_hw; use software encryption
+TARGET_HW_DISK_ENCRYPTION := false

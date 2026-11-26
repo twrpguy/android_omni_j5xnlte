@@ -87,6 +87,18 @@ jobs:
           path: ccache
           key: ccache-${{ github.run_id }}
 
+      - name: List all missing build dependencies
+        if: failure()
+        run: |
+          cd src
+          N=$(ls out/combined-*.ninja out/build-*.ninja 2>/dev/null | head -1)
+          [ -n "$N" ] || exit 0
+          sudo chmod -R a+rX out/*.ninja out/soong 2>/dev/null || true
+          python3 ../port/scripts/missing-deps.py "$N" /w "$GITHUB_WORKSPACE" > ../missing-deps.txt || true
+          cd ..
+          tail -1 missing-deps.txt
+          { echo '## Missing build dependencies'; echo '```'; head -150 missing-deps.txt; echo '```'; } >> $GITHUB_STEP_SUMMARY
+
       - name: Show error summary
         if: failure()
         run: |
@@ -108,7 +120,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: error-log
-          path: error-excerpt.txt
+          path: |
+            error-excerpt.txt
+            missing-deps.txt
 
       - name: Publish release
         if: success()
