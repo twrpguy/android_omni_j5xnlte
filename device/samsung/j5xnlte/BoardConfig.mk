@@ -44,3 +44,7 @@ BOARD_HAL_STATIC_LIBRARIES := libhealthd.default
 
 # Omni has no vendor/qcom/opensource/cryptfs_hw; use software encryption
 TARGET_HW_DISK_ENCRYPTION := false
+
+# The device ships an open-source QMI shim (libwcnss_qmi), so wcnss_service
+# must not link Qualcomm's QMI blobs directly (they aren't build modules)
+TARGET_PROVIDES_WCNSS_QMI := true

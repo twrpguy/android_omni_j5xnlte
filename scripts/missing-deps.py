@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""List every ninja input that nothing builds and that doesn't exist on disk.
-Ninja itself stops at the first one; this shows them all in one go.
-usage: missing-deps.py <build-*.ninja> <path prefix inside container> <real path>"""
+"""List every missing input reachable from the build goal (ninja stops at the first).
+usage: missing-deps.py <combined-*.ninja> <prefix inside container> <real prefix> [goal]"""
 import os, re, sys
-ninja, cprefix, real = sys.argv[1], sys.argv[2], sys.argv[3]
-outputs, needed = set(), {}
+from collections import deque
+ninja, cprefix, real = sys.argv[1:4]
+goal = sys.argv[4] if len(sys.argv) > 4 else 'bacon'
+deps, seen_files = {}, set()
 def unesc(t): return t.replace('$ ', ' ').replace('$:', ':').replace('$$', '$')
 def split(s): return [unesc(t) for t in re.split(r'(?<!\$) ', s) if t]
-seen = set()
 def parse(path):
-    if path in seen: return
-    seen.add(path)
+    if path in seen_files: return
+    seen_files.add(path)
     buf = ''
     with open(path, errors='replace') as f:
         for line in f:
@@ -19,17 +19,23 @@ def parse(path):
                 buf += line[:-1]; continue
             line, buf = buf + line, ''
             if line.startswith(('subninja ', 'include ')):
-                parse(line.split(' ', 1)[1].replace(cprefix, real, 1)); continue
+                parse(line.split(' ', 1)[1].strip().replace(cprefix, real, 1)); continue
             if not line.startswith('build '): continue
             m = re.match(r'build (.*?)(?<!\$): (\S+)(.*)', line)
             if not m: continue
-            outs, rest = m.group(1), m.group(3)
-            for o in split(outs.replace(' | ', ' ').replace('|', ' ')): outputs.add(o)
-            ins = re.split(r' \|\|? ', rest)
-            for part in ins:
-                for i in split(part):
-                    needed.setdefault(i, outs.split(' ')[0])
+            outs = split(m.group(1).replace(' | ', ' ').replace('|', ' '))
+            ins = [i for part in re.split(r' \|\|? ', m.group(3)) for i in split(part)]
+            for o in outs: deps[o] = ins
 parse(ninja)
-miss = sorted(i for i in needed if i not in outputs and not os.path.exists(i.replace(cprefix, real, 1)))
-for i in miss: print(f'{i}\n    needed by {needed[i]}')
-print(f'\n{len(miss)} missing input(s)')
+if goal not in deps:
+    sys.exit(f'goal {goal!r} not in ninja graph')
+missing, todo, done = {}, deque([goal]), {goal}
+while todo:
+    t = todo.popleft()
+    for i in deps.get(t, ()):
+        if i in done: continue
+        done.add(i)
+        if i in deps: todo.append(i)
+        elif not os.path.exists(i.replace(cprefix, real, 1)): missing[i] = t
+for i in sorted(missing): print(f'{i}\n    needed by {missing[i]}')
+print(f'\n{len(missing)} missing input(s) reachable from {goal}')
