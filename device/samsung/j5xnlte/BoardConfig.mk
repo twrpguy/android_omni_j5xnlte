@@ -48,3 +48,7 @@ TARGET_HW_DISK_ENCRYPTION := false
 # The device ships an open-source QMI shim (libwcnss_qmi), so wcnss_service
 # must not link Qualcomm's QMI blobs directly (they aren't build modules)
 TARGET_PROVIDES_WCNSS_QMI := true
+
+# Nougat's envsetup only puts arm-eabi-4.9 on PATH, but only 4.8 is in the tree
+KERNEL_TOOLCHAIN := $(ANDROID_BUILD_TOP)/prebuilts/gcc/$(HOST_PREBUILT_TAG)/arm/arm-eabi-4.8/bin
+KERNEL_TOOLCHAIN_PREFIX := arm-eabi-
