@@ -52,6 +52,37 @@ done
 sed -i '/^\s*\.setFeature = set_feature,\s*$/{N;s/,\n\s*\.getFeature = get_feature/\n/}' device/qcom/common/power/power.c
 grep -n 'getFeature\|setFeature' device/qcom/common/power/power.c
 
+echo ">> OTA: ship the install/bin scripts inside the zip (Omni never packages PRODUCT_OUT/install)"
+python3 - device/samsung/msm8916-common/releasetools/releasetools.py <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+if 'omni-compat' not in s:
+    helper = """
+# omni-compat: LineageOS packs $OUT/install into the OTA zip, Omni doesn't.
+# Write the scripts straight from this directory into the package.
+def _add_install_scripts(info):
+    # The build may load a copy of this file from target-files META/, so look
+    # for the scripts in the source tree too.
+    dirs = [os.path.dirname(os.path.abspath(__file__)),
+            common.OPTIONS.info_dict.get("tool_extensions", ""),
+            os.path.join(os.environ.get("ANDROID_BUILD_TOP", os.getcwd()),
+                         "device/samsung/msm8916-common/releasetools")]
+    here = next(d for d in dirs if d and os.path.isfile(os.path.join(d, "run_scripts.sh")))
+    for src, dst in (("run_scripts.sh", "install/bin/run_scripts.sh"),
+                     ("functions.sh", "install/bin/functions.sh"),
+                     ("postvalidate/resize_system.sh", "install/bin/postvalidate/resize_system.sh")):
+        with open(os.path.join(here, src)) as f:
+            common.ZipWriteStr(info.output_zip, dst, f.read(), perms=0o755)
+
+def FullOTA_InstallBegin(info):
+    _add_install_scripts(info)
+"""
+    s = s.replace("\ndef FullOTA_InstallBegin(info):\n", helper, 1)
+    open(p, 'w').write(s)
+assert '_add_install_scripts(info)' in s
+PY
+
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
 sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
