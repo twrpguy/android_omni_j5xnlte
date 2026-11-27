@@ -65,6 +65,13 @@ jobs:
       - name: Apply port patches
         run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
 
+      - name: Bundle OmniROM wallpapers
+        continue-on-error: true
+        run: |
+          which convert identify >/dev/null || sudo apt-get install -y -qq imagemagick
+          cd src && bash ../port/scripts/add-omni-wallpapers.sh | tee ../wallpapers.log
+          tail -2 ../wallpapers.log >> $GITHUB_STEP_SUMMARY
+
       - name: Restore ccache
         uses: actions/cache/restore@v4
         with:
