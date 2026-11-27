@@ -109,6 +109,18 @@ jobs:
         run: |
           Z=$(ls src/out/target/product/j5xnlte/omni-*.zip | head -1)
           unzip -l "$Z" | grep -E "install/bin/run_scripts.sh|META-INF/com/google/android/updater-script|boot.img" 
+          # Every library the RIL chain links against must be on /system
+          L=src/out/target/product/j5xnlte/system/lib
+          missing=""; seen=" "; queue="libsec-ril.so"
+          while [ -n "$queue" ]; do
+            set -- $queue; cur=$1; shift; queue="$*"
+            case "$seen" in *" $cur "*) continue ;; esac; seen="$seen$cur "
+            for d in $(readelf -d "$L/$cur" 2>/dev/null | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
+              if [ -f "$L/$d" ] || [ -f "src/out/target/product/j5xnlte/system/vendor/lib/$d" ]; then queue="$queue $d"; else missing="$missing $cur->$d"; fi
+            done
+          done
+          [ -z "$missing" ] || { echo "::error::RIL libraries missing from /system:$missing"; exit 1; }
+          echo "RIL dependency chain complete"
           ls src/out/target/product/j5xnlte/system/app/WallpaperPicker/WallpaperPicker.apk || { echo "::error::WallpaperPicker not built into system"; exit 1; }
           for f in install/bin/run_scripts.sh install/bin/functions.sh boot.img; do
             unzip -l "$Z" | grep -q " $f$" || { echo "::error::$f missing from $Z"; exit 1; }

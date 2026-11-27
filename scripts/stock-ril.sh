@@ -70,24 +70,54 @@ for f in libsec-ril.so libsec-ril-dsds.so; do
 done
 if [ ! -s out/libsec-ril.so ]; then sudo umount mnt; fail "libsec-ril.so not found in stock system"; fi
 
-# Pull Samsung-only libraries the stock RIL links against (never AOSP/Qualcomm ones
-# the ROM already builds or ships).
-keep_re='^lib(sec|omission|factory|ril_sem|vendorsemril|secnativefeature|SecRil|sec_)'
-for lib in $(readelf -d out/libsec-ril*.so 2>/dev/null | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p' | sort -u); do
-  case "$lib" in libsec-ril.so|libsec-ril-dsds.so) continue ;; esac
-  echo "$lib" | grep -Eq "$keep_re" || continue
-  if [ -f "$SYS/lib/$lib" ]; then
-    cp "$SYS/lib/$lib" out/
+# Pull every library in the stock RIL's dependency chain (recursively) that the
+# ROM doesn't already build or ship; take it from the stock system.
+provided=$WORK/provided.txt
+{
+  # modules built from source
+  grep -rhoE --include=Android.mk 'LOCAL_MODULE *:?= *lib[A-Za-z0-9_+.-]+' \
+       "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" \
+       "$TOP/device" "$TOP/vendor" "$TOP/libcore" "$TOP/art" "$TOP/bootable" 2>/dev/null \
+    | sed -E 's/.*= *//'
+  grep -rhoE --include=Android.bp 'name: *"lib[A-Za-z0-9_+.-]+"' \
+       "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" "$TOP/art" 2>/dev/null \
+    | sed -E 's/.*"(.*)"/\1/'
+  # prebuilt blobs copied into /system/lib
+  grep -rhoE ':system/(vendor/)?lib/lib[^ \\]+\.so' "$TOP/vendor/samsung" "$TOP/vendor/samsung-j5x" --include='*.mk' 2>/dev/null \
+    | sed -E 's#.*/##; s/\.so$//'
+} | sed -E 's/\.so$//' | sort -u > "$provided"
+say "  $(wc -l < "$provided") libraries provided by the ROM"
+
+queue="libsec-ril.so libsec-ril-dsds.so"; seen=" "
+while [ -n "$queue" ]; do
+  set -- $queue; cur=$1; shift; queue="$*"
+  case "$seen" in *" $cur "*) continue ;; esac
+  seen="$seen$cur "
+  [ -f out/$cur ] || continue
+  for lib in $(readelf -d out/$cur 2>/dev/null | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
+    case "$seen $queue" in *" $lib "*|*" $lib") continue ;; esac
+    grep -qx "${lib%.so}" "$provided" && continue
+    src=""
+    for d in "$SYS/lib" "$SYS/vendor/lib"; do [ -f "$d/$lib" ] && src="$d/$lib" && break; done
+    if [ -z "$src" ]; then say "  ! $cur needs $lib: not in ROM or stock"; continue; fi
+    cp "$src" out/
     echo "PRODUCT_COPY_FILES += vendor/samsung-j5x/stock/$lib:system/lib/$lib" >> "$TOP/$EXTRA_MK"
-    say "  + dependency $lib"
-  fi
+    say "  + dependency $lib (needed by $cur)"
+    queue="$queue $lib"
+  done
 done
+# Samsung's feature libraries read this
+if [ -f "$SYS/etc/floating_feature.xml" ]; then
+  cp "$SYS/etc/floating_feature.xml" out/
+  echo "PRODUCT_COPY_FILES += vendor/samsung-j5x/stock/floating_feature.xml:system/etc/floating_feature.xml" >> "$TOP/$EXTRA_MK"
+  say "  + etc/floating_feature.xml"
+fi
 say "  libsec-ril needs: $(readelf -d out/libsec-ril.so | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p' | tr '\n' ' ')"
 sudo umount mnt
 cd - >/dev/null
 
 mkdir -p vendor/samsung-j5x/stock
-cp "$WORK"/out/*.so vendor/samsung-j5x/stock/
+cp "$WORK"/out/* vendor/samsung-j5x/stock/
 for f in libsec-ril.so libsec-ril-dsds.so; do
   [ -s vendor/samsung-j5x/stock/$f ] && cp vendor/samsung-j5x/stock/$f "$DEST/$f" && say "  replaced $f with $ver version"
 done
