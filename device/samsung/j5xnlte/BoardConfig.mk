@@ -58,3 +58,6 @@ USE_CUSTOM_AUDIO_POLICY := 0
 
 # Debug: SELinux permissive while bringing the port up
 BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+
+# Omni selects the qcom Bluetooth HAL (libbt-vendor) by variant; Lineage didn't need this
+TARGET_QCOM_BLUETOOTH_VARIANT := caf-msm8916

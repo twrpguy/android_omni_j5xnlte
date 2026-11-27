@@ -44,6 +44,10 @@
   <!-- Proprietary blobs -->
   <project path="vendor/samsung" name="Galaxy-MSM8916/proprietary_vendor_samsung" remote="gh" revision="cm-14.1" />
 
+  <!-- The cm-14.1 vendor branch has no J5 2016 set (it ships the J500's T13QL camera
+       module etc.); lineage-15.1 has j5x-common + j5xnlte from J510 firmware -->
+  <project path="vendor/samsung-j5x" name="Galaxy-MSM8916/proprietary_vendor_samsung" remote="gh" revision="lineage-15.1" clone-depth="1" />
+
   <!-- Dependencies -->
   <project path="vendor/qcom/opensource/dataservices" name="LineageOS/android_vendor_qcom_opensource_dataservices" remote="gh" revision="cm-14.1" />
   <project path="hardware/samsung"                  name="LineageOS/android_hardware_samsung"                  remote="gh" revision="cm-14.1" />

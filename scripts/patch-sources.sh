@@ -106,6 +106,48 @@ assert 'Proxy' not in s and 'QCELP' not in s
 open(p, 'w').write(s)
 PY
 
+echo ">> J510 blobs: use lineage-15.1 j5x-common + j5xnlte, drop the J500 copies they replace"
+# Only the copy-file lists are used from this checkout; its Android.mk files would
+# redefine the cm-14.1 msm8916-common prebuilt modules
+find vendor/samsung-j5x -name Android.mk -exec sh -c ': > "$1"' _ {} \;
+python3 - <<'PY'
+import os
+src = ['vendor/samsung-j5x/j5x-common/j5x-common-vendor.mk',
+       'vendor/samsung-j5x/j5xnlte/j5xnlte-vendor.mk']
+lines, dests = [], set()
+for f in src:
+    for l in open(f):
+        if ':system/' in l:
+            pair = l.strip().rstrip('\\').strip().replace('vendor/samsung/', 'vendor/samsung-j5x/', 1)
+            srcf, dst = pair.split(':', 1)
+            if not os.path.isfile(srcf):
+                raise SystemExit('missing blob ' + srcf)
+            lines.append(pair); dests.add(dst)
+with open('device/samsung/j5xnlte/j5x-blobs.mk', 'w') as o:
+    o.write('# Generated from Galaxy-MSM8916 proprietary_vendor_samsung lineage-15.1\n')
+    o.write('PRODUCT_COPY_FILES += \\\n' + ' \\\n'.join('    ' + l for l in lines) + '\n')
+removed = 0
+for f in ['vendor/samsung/msm8916-common/msm8916-common-vendor.mk',
+          'vendor/samsung/j5-common/j5-common-vendor.mk',
+          'vendor/samsung/j5xnlte/j5xnlte-vendor.mk']:
+    out = []
+    for l in open(f):
+        if ':system/' in l and l.strip().rstrip('\\').strip().split(':', 1)[1] in dests:
+            removed += 1
+            continue
+        out.append(l)
+    # keep continuations valid where a block's last entry went away
+    for i, l in enumerate(out):
+        nxt = out[i + 1] if i + 1 < len(out) else ''
+        if ':system/' in l and l.rstrip().endswith('\\') and ':system/' not in nxt:
+            out[i] = l.rstrip()[:-1].rstrip() + '\n'
+    open(f, 'w').write(''.join(out))
+print(len(lines), 'J510 blob entries,', removed, 'J500 duplicates removed')
+PY
+# The J500 camera module description would still be picked up by the daemon
+rm -f vendor/samsung/j5-common/proprietary/etc/T13QL_s5k3l2xx_module_info.xml
+sed -i '/T13QL_s5k3l2xx_module_info.xml/d' vendor/samsung/j5-common/j5-common-vendor.mk
+
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
 sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
