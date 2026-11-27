@@ -37,3 +37,8 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/bootlog/bootlog.rc:system/etc/init/bootlog.rc \
     $(LOCAL_PATH)/bootlog/bootlog.sh:system/bin/bootlog.sh
+
+# Wallpaper picker with the bundled OmniROM wallpapers (scripts/add-omni-wallpapers.sh).
+# Omni 7.1 only installs it via OmniStyle, whose source is gone.
+PRODUCT_PACKAGES += \
+    WallpaperPicker
