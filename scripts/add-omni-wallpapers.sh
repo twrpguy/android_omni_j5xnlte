@@ -13,7 +13,6 @@ mkdir -p "$OUT"
 
 # blob id (in android_vendor_omni history)      resource name     (origin)
 WALLS="
-3d9b0fa22d85fc3d679bd571a68e937b0aec2b74 omni_marshmallow  android-6.0 default
 bf7dbd3f9f3261f3e4eb5bc40e29eb3945c9127d omni_nougat       android-7.0 default
 1759fd7409e151d7f02430122203de592937e6c8 omni_nature       android-10 theme
 d4f7b353a9b255bcc255f55f02f7192dc0caaef5 omni_red          android-10 theme
