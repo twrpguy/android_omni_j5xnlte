@@ -7,6 +7,10 @@ on:
         description: "make target (bacon = flashable zip, bootimage = kernel only)"
         default: bacon
         required: true
+      allow_old_ril:
+        description: "build even if the J510FN stock RIL can't be fetched"
+        default: "false"
+        required: false
   push:
     branches: [main]
     paths-ignore: ["README.md"]
@@ -63,12 +67,15 @@ jobs:
           df -h .
 
       - name: Use the J510FN stock RIL (matches the modem firmware)
-        continue-on-error: true
         timeout-minutes: 40
         run: |
           sudo apt-get install -y -qq lz4 android-sdk-libsparse-utils >/dev/null
           cd src && bash ../port/scripts/stock-ril.sh | tee ../stock-ril.log
           grep -E ">> " ../stock-ril.log >> $GITHUB_STEP_SUMMARY || true
+          # Fail fast while bringing this up: a build without the stock RIL has no SIM
+          if [ "${{ github.event.inputs.allow_old_ril }}" != "true" ] && grep -q "keeping the J500" ../stock-ril.log; then
+            echo "::error::stock RIL not applied (set allow_old_ril to build anyway)"; exit 1
+          fi
 
       - name: Apply port patches
         run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
