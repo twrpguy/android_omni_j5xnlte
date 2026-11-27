@@ -1,0 +1,11 @@
+# Debug: save kernel and Android logs to /cache/bootlog so they can be read
+# from TWRP after a bootloop (no PC/adb needed).
+on post-fs
+    start bootlog
+
+service bootlog /system/bin/sh /system/bin/bootlog.sh
+    user root
+    group root
+    seclabel u:r:shell:s0
+    disabled
+    oneshot

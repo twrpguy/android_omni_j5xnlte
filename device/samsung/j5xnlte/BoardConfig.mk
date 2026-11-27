@@ -55,3 +55,6 @@ KERNEL_TOOLCHAIN_PREFIX := arm-eabi-
 
 # The CAF policy_hal targets Lineage's AudioPolicyMix API; use AOSP's policy manager
 USE_CUSTOM_AUDIO_POLICY := 0
+
+# Debug: SELinux permissive while bringing the port up
+BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive

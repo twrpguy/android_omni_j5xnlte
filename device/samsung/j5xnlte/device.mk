@@ -32,3 +32,8 @@ DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 #	frameworks/base/nfc-extras/com.android.nfc_extras.xml:system/etc/permissions/com.android.nfc_extras.xml \
 #	frameworks/native/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml \
 #	frameworks/native/data/etc/android.hardware.nfc.hce.xml:system/etc/permissions/android.hardware.nfc.hce.xml
+
+# Debug boot logging to /cache/bootlog (readable from TWRP)
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/bootlog/bootlog.rc:system/etc/init/bootlog.rc \
+    $(LOCAL_PATH)/bootlog/bootlog.sh:system/bin/bootlog.sh
