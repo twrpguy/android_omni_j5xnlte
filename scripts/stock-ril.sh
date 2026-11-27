@@ -42,32 +42,48 @@ say "stock firmware $ver ($region)"
 cd "$WORK" || fail "no work dir"
 # Only the AP part (system image); samloader decrypts and extracts it
 samloader download -m "$MODEL" -r "$region" -s ap -d fw 2>&1 | grep -v '^\s*$' | tail -5
+say "  firmware files: $(find fw -type f -printf '%f ' | head -c 400)"
 ap=$(find fw -name 'AP_*.tar*' | head -1)
-[ -n "$ap" ] || fail "download failed (no AP file)"
-tar -xf "$ap" --wildcards 'system.img*' 2>/dev/null || ls fw/*/system.img* >/dev/null 2>&1 || fail "no system image in $ap"
-[ -e system.img* ] 2>/dev/null || mv fw/*/system.img* . 2>/dev/null
-img=$(ls system.img* | head -1)
-case "$img" in *.lz4) lz4 -dq "$img" system.sparse && img=system.sparse ;; esac
-simg2img "$img" system.raw 2>/dev/null || cp "$img" system.raw
-debugfs -R "ls -l /lib/libsec-ril.so" system.raw 2>/dev/null | grep -q libsec-ril || fail "libsec-ril.so not in stock system"
+img=$(find fw -name 'system.img*' | head -1)
+if [ -z "$img" ]; then
+  [ -n "$ap" ] || fail "download failed (no AP file)"
+  say "  AP: $(basename "$ap"): $(tar -tf "$ap" | tr '\n' ' ' | head -c 300)"
+  tar -xf "$ap" --wildcards 'system.img*' || fail "no system image in $(basename "$ap")"
+  img=$(ls system.img* | head -1)
+fi
+case "$img" in *.lz4) lz4 -dqf "$img" system.sparse && img=system.sparse ;; esac
+say "  image: $(basename "$img"): $(file -b "$img" | cut -c1-80)"
+if file -b "$img" | grep -qi "android sparse"; then
+  simg2img "$img" system.raw || fail "simg2img failed"
+else
+  cp "$img" system.raw
+fi
+mkdir -p mnt
+sudo mount -o loop,ro system.raw mnt || fail "cannot mount stock system ($(file -b system.raw | cut -c1-60))"
+# system-as-root images keep the files under /system
+SYS=mnt; [ -d mnt/system/lib ] && SYS=mnt/system
+say "  stock libs: $(find "$SYS" -name 'libsec-ril*' -printf '%P ' 2>/dev/null)"
 
 mkdir -p out
 for f in libsec-ril.so libsec-ril-dsds.so; do
-  debugfs -R "dump /lib/$f out/$f" system.raw >/dev/null 2>&1
+  [ -f "$SYS/lib/$f" ] && cp "$SYS/lib/$f" out/
 done
-[ -s out/libsec-ril.so ] || fail "could not extract libsec-ril.so"
+if [ ! -s out/libsec-ril.so ]; then sudo umount mnt; fail "libsec-ril.so not found in stock system"; fi
 
 # Pull Samsung-only libraries the stock RIL links against (never AOSP/Qualcomm ones
 # the ROM already builds or ships).
 keep_re='^lib(sec|omission|factory|ril_sem|vendorsemril|secnativefeature|SecRil|sec_)'
 for lib in $(readelf -d out/libsec-ril*.so 2>/dev/null | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p' | sort -u); do
-  echo "$lib" | grep -Eq "$keep_re" || continue
   case "$lib" in libsec-ril.so|libsec-ril-dsds.so) continue ;; esac
-  if debugfs -R "dump /lib/$lib out/$lib" system.raw >/dev/null 2>&1 && [ -s "out/$lib" ]; then
+  echo "$lib" | grep -Eq "$keep_re" || continue
+  if [ -f "$SYS/lib/$lib" ]; then
+    cp "$SYS/lib/$lib" out/
     echo "PRODUCT_COPY_FILES += vendor/samsung-j5x/stock/$lib:system/lib/$lib" >> "$TOP/$EXTRA_MK"
     say "  + dependency $lib"
   fi
 done
+say "  libsec-ril needs: $(readelf -d out/libsec-ril.so | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p' | tr '\n' ' ')"
+sudo umount mnt
 cd - >/dev/null
 
 mkdir -p vendor/samsung-j5x/stock

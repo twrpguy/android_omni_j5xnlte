@@ -68,7 +68,7 @@ jobs:
         run: |
           sudo apt-get install -y -qq lz4 android-sdk-libsparse-utils >/dev/null
           cd src && bash ../port/scripts/stock-ril.sh | tee ../stock-ril.log
-          grep -E "stock firmware|replaced|dependency|keeping" ../stock-ril.log >> $GITHUB_STEP_SUMMARY || true
+          grep -E ">> " ../stock-ril.log >> $GITHUB_STEP_SUMMARY || true
 
       - name: Apply port patches
         run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
