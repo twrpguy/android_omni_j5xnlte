@@ -4,10 +4,12 @@ set -eo pipefail
 export DEBIAN_FRONTEND=noninteractive LC_ALL=C LANG=C
 
 apt-get update -qq
-apt-get install -y -qq openjdk-8-jdk python git-core gnupg flex bison gperf build-essential \
+# Retry once (dpkg can fail transiently on first configure); show errors
+apt_install() { apt-get install -y -q openjdk-8-jdk python git-core gnupg flex bison gperf build-essential \
   zip unzip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 lib32ncurses5-dev \
   x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc bc \
-  ccache rsync schedtool lzop pngcrush imagemagick libssl-dev squashfs-tools procps >/dev/null
+  ccache rsync schedtool lzop pngcrush imagemagick libssl-dev squashfs-tools procps 2>&1 | grep -E "^E:|dpkg:|error" ; return ${PIPESTATUS[0]}; }
+apt_install || { dpkg --configure -a; apt-get -f install -y -q; apt_install; } || { df -h / /tmp; exit 100; }
 
 # Jack talks to its server over TLSv1, which JDK 8u29x disables
 sed -i 's/^\(jdk.tls.disabledAlgorithms=\)SSLv3, TLSv1, TLSv1.1,/\1SSLv3,/' \
