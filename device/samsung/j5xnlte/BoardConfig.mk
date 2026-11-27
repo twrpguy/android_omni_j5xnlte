@@ -37,7 +37,7 @@ TARGET_GLOBAL_CPPFLAGS += $(BOARD_GLOBAL_CPPFLAGS)
 # LineageOS build function used by the CAF HALs and qcom/common.
 # Omni has no "variant" paths, so the msm8916 CAF HALs replace the stock
 # ones in place (see local_manifests/omni_j5xnlte.xml).
-project-path-for = $(strip $(if $(filter recovery,$(1)),bootable/recovery,$(if $(filter ril,$(1)),hardware/ril,$(if $(filter qcom-display,$(1)),hardware/qcom/display,$(if $(filter qcom-audio,$(1)),hardware/qcom/audio,$(if $(filter qcom-media,$(1)),hardware/qcom/media,))))))
+project-path-for = $(strip $(if $(filter recovery,$(1)),bootable/recovery,$(if $(filter ril,$(1)),hardware/ril,$(if $(filter qcom-display,$(1)),hardware/qcom/display,$(if $(filter qcom-audio,$(1)),hardware/qcom/audio,$(if $(filter qcom-media,$(1)),hardware/qcom/media,$(if $(filter qcom-dataservices,$(1)),vendor/qcom/opensource/dataservices,)))))))
 
 # libhealthd.cm no longer exists anywhere; use AOSP's board library
 BOARD_HAL_STATIC_LIBRARIES := libhealthd.default

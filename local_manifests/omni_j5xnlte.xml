@@ -45,6 +45,7 @@
   <project path="vendor/samsung" name="Galaxy-MSM8916/proprietary_vendor_samsung" remote="gh" revision="cm-14.1" />
 
   <!-- Dependencies -->
+  <project path="vendor/qcom/opensource/dataservices" name="LineageOS/android_vendor_qcom_opensource_dataservices" remote="gh" revision="cm-14.1" />
   <project path="hardware/samsung"                  name="LineageOS/android_hardware_samsung"                  remote="gh" revision="cm-14.1" />
   <project path="packages/resources/devicesettings" name="LineageOS/android_packages_resources_devicesettings" remote="gh" revision="cm-14.1" />
   <project path="external/sony/boringssl-compat"    name="LineageOS/android_external_sony_boringssl-compat"    remote="gh" revision="cm-14.1" />

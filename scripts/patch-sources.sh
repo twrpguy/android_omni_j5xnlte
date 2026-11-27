@@ -83,6 +83,29 @@ def FullOTA_InstallBegin(info):
 assert '_add_install_scripts(info)' in s
 PY
 
+echo ">> Audio policy XML: drop entries Omni's audio policy parser doesn't know"
+# Omni only knows AUDIO_DEVICE_OUT_PROXY with AUDIO_EXTN_AFE_PROXY_ENABLED; one bad
+# devicePort makes the parser drop every device after it, and audioserver then
+# segfaults on the dangling routes (bootloop: system_server waits for audio_policy).
+python3 - hardware/qcom/audio/configs/msm8916_32/audio_policy_configuration.xml <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p).read()
+s = re.sub(r'\s*<devicePort tagName="Proxy".*?</devicePort>', '', s, flags=re.S)
+s = re.sub(r'\s*<route type="mix" sink="Proxy"[^>]*/>', '', s, flags=re.S)
+s = re.sub(r'(sources="[^"]*)', lambda m: ','.join(x for x in m.group(1).split(',') if x.strip() != 'Proxy'), s)
+bad = ('AMR_NB', 'AMR_WB', 'QCELP', 'EVRC', 'EVRCB', 'EVRCWB', 'EVRCNW')
+for f in bad:
+    # whole <profile/> entries for an unknown format
+    s = re.sub(r'\s*<profile name="" format="AUDIO_FORMAT_' + f + r'"[^>]*/>', '', s, flags=re.S)
+def fix_list(m):
+    keep = [x for x in m.group(1).split(',') if x.replace('AUDIO_FORMAT_', '') not in bad]
+    return 'format="' + ','.join(keep) + '"'
+s = re.sub(r'format="([^"]*)"', fix_list, s)
+assert 'Proxy' not in s and 'QCELP' not in s
+open(p, 'w').write(s)
+PY
+
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
 sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
