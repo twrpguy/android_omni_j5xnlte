@@ -24,7 +24,4 @@ amaze=$(curl -fsSL https://api.github.com/repos/TeamAmaze/AmazeFileManager/relea
         | python3 -c 'import json,sys; a=[x["browser_download_url"] for x in json.load(sys.stdin)["assets"] if x["name"].endswith(".apk")]; print(([u for u in a if "fdroid" in u] or a)[0])' 2>/dev/null)
 [ -n "$amaze" ] && get Amaze "$amaze" || echo ">> Amaze: no APK found in the latest release"
 
-# Brevent: the developer's direct download (brevent.jianyu.io)
-get Brevent https://dl.jianyv.com/br/latest.apk
-
 exit 0

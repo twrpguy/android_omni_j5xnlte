@@ -80,7 +80,7 @@ jobs:
       - name: Apply port patches
         run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
 
-      - name: Download bundled apps (Amaze, Brevent)
+      - name: Download bundled apps (Amaze)
         continue-on-error: true
         run: cd src && bash ../port/scripts/fetch-apps.sh | tee -a $GITHUB_STEP_SUMMARY
 
@@ -122,7 +122,7 @@ jobs:
           for a in OmniSwitch OmniClockOSS messaging; do
             ls $P/app/$a/$a.apk $P/priv-app/$a/$a.apk 2>/dev/null | grep -q . || { echo "::error::$a not built into system"; exit 1; }
           done
-          for a in Amaze Brevent; do
+          for a in Amaze; do
             if [ -f src/device/samsung/j5xnlte/preinstall/$a.apk.pre ]; then
               [ -f $P/preinstall/$a.apk.pre ] || { echo "::error::$a downloaded but not in /system/preinstall"; exit 1; }
             else echo "::warning::$a was not downloaded, so it is not bundled"; fi

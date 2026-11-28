@@ -49,7 +49,7 @@ PRODUCT_PACKAGES += \
     OmniClockOSS \
     messaging
 
-# Amaze and Brevent (official APKs, scripts/fetch-apps.sh): installed once on
+# Amaze (official APK, scripts/fetch-apps.sh): installed once on
 # first boot as normal user apps, so they can be updated or uninstalled
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/preinstall/preinstall-apps.rc:system/etc/init/preinstall-apps.rc \

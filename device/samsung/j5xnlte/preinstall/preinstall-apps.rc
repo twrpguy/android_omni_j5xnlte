@@ -1,4 +1,4 @@
-# Install the bundled user apps (Amaze, Brevent) once Android has booted.
+# Install the bundled user apps (Amaze) once Android has booted.
 on property:sys.boot_completed=1
     start preinstall_apps
 
