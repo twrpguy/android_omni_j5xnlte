@@ -187,6 +187,10 @@ jobs:
             Unofficial OmniROM 7.1.2 for Samsung Galaxy J5 2016 (SM-J510FN, j5xnlte).
             Flash the zip in TWRP after a full wipe (system, data, cache, dalvik).
             recovery.img is OmniROM's TWRP built from the same tree.
+
+            **Known bugs:** RIL / SIM: the SIM card is not detected (no calls, SMS or mobile data; Wi-Fi only).
+            SELinux is permissive. Debug boot logging to /cache/bootlog is on.
+            Full status: see the README.
           files: |
             src/out/target/product/j5xnlte/omni-*.zip
             src/out/target/product/j5xnlte/boot.img
