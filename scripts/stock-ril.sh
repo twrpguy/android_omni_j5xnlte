@@ -72,29 +72,24 @@ if [ ! -s out/libsec-ril.so ]; then sudo umount mnt; fail "libsec-ril.so not fou
 
 # Pull every library in the stock RIL's dependency chain (recursively) that the
 # ROM doesn't already build or ship; take it from the stock system.
-provided=$WORK/provided.txt
-# Only what this device actually builds/ships: other devices' vendor blobs and
-# prebuilt modules in the shared vendor repos must not count.
+# Libraries the ROM builds from source stay as they are. Closed-source blobs in
+# the RIL's dependency chain are replaced by the stock J510FN (Nougat) versions:
+# the old blob set is Marshmallow-era and lacks symbols the Nougat RIL uses
+# (e.g. ds_get_target in libdsutils).
+source_libs=$WORK/source-libs.txt
 OURVENDOR="$TOP/vendor/samsung/msm8916-common $TOP/vendor/samsung/j5-common $TOP/vendor/samsung/j5nlte $TOP/vendor/samsung-j5x/j5x-common $TOP/vendor/samsung-j5x/j5xnlte"
 {
-  # modules built from source
   grep -rhoE --include=Android.mk 'LOCAL_MODULE *:?= *lib[A-Za-z0-9_+.-]+' \
        "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" \
        "$TOP/device/samsung/msm8916-common" "$TOP/device/samsung/j5-common" \
        "$TOP/device/samsung/qcom-common" "$TOP/device/qcom" "$TOP/vendor/omni" "$TOP/vendor/qcom" \
-       "$TOP/libcore" "$TOP/art" "$TOP/bootable" $OURVENDOR 2>/dev/null \
+       "$TOP/libcore" "$TOP/art" "$TOP/bootable" 2>/dev/null \
     | sed -E 's/.*= *//'
   grep -rhoE --include=Android.bp 'name: *"lib[A-Za-z0-9_+.-]+"' \
        "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" "$TOP/art" 2>/dev/null \
     | sed -E 's/.*"(.*)"/\1/'
-  # prebuilt blobs this device copies into /system/lib
-  grep -hoE ':system/(vendor/)?lib/lib[^ \\]+\.so' $(find $OURVENDOR -maxdepth 1 -name '*-vendor.mk' 2>/dev/null) 2>/dev/null \
-    | sed -E 's#.*/##; s/\.so$//'
-} | sed -E 's/\.so$//' | sort -u > "$provided"
-for l in libfloatingfeature libsecnativefeature; do
-  grep -qx "$l" "$provided" && say "  note: $l counted as provided by this device"
-done
-say "  $(wc -l < "$provided") libraries provided by the ROM"
+} | sed -E 's/\.so$//' | sort -u > "$source_libs"
+say "  $(wc -l < "$source_libs") libraries built from source"
 
 queue="libsec-ril.so libsec-ril-dsds.so"; seen=" "
 while [ -n "$queue" ]; do
@@ -103,14 +98,14 @@ while [ -n "$queue" ]; do
   seen="$seen$cur "
   [ -f out/$cur ] || continue
   for lib in $(readelf -d out/$cur 2>/dev/null | sed -n 's/.*Shared library: \[\(.*\)\]/\1/p'); do
-    case "$seen $queue" in *" $lib "*|*" $lib") continue ;; esac
-    grep -qx "${lib%.so}" "$provided" && continue
-    src=""
-    for d in "$SYS/lib" "$SYS/vendor/lib"; do [ -f "$d/$lib" ] && src="$d/$lib" && break; done
-    if [ -z "$src" ]; then say "  ! $cur needs $lib: not in ROM or stock"; continue; fi
-    cp "$src" out/
-    echo "PRODUCT_COPY_FILES += vendor/samsung-j5x/stock/$lib:system/lib/$lib" >> "$TOP/$EXTRA_MK"
-    say "  + dependency $lib (needed by $cur)"
+    case "$seen $queue " in *" $lib "*) continue ;; esac
+    grep -qx "${lib%.so}" "$source_libs" && continue
+    rel=""
+    for d in lib vendor/lib; do [ -f "$SYS/$d/$lib" ] && rel=$d && break; done
+    if [ -z "$rel" ]; then say "  ! $cur needs $lib: not built from source and not in stock"; continue; fi
+    cp "$SYS/$rel/$lib" out/
+    echo "PRODUCT_COPY_FILES += vendor/samsung-j5x/stock/$lib:system/$rel/$lib" >> "$TOP/$EXTRA_MK"
+    say "  + stock $rel/$lib (needed by $cur)"
     queue="$queue $lib"
   done
 done
