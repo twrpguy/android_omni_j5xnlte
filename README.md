@@ -23,6 +23,16 @@ Set the target to `bootimage` to test only the kernel and boot image, which is m
 - Device / blobs: Galaxy-MSM8916 `cm-14.1`
 - ROM: omnirom/android `android-7.1` (android-7.1.2_r29)
 
-## Known caveats
-- The RIL/sensor blobs come from the J500FN set that the device tree lists, so check calls, SMS and mobile data first.
-- The camera app (Snap) and Doze/FlipFlap are LineageOS-only and are left out.
+## Status
+**Works:** boot, Wi-Fi, Bluetooth, audio (speaker, earpiece, microphone), both cameras, auto-rotation, sensors,
+wallpapers (OmniROM's own), OmniSwitch, Clock (OmniClockOSS), Messaging, Amaze (installed on first boot).
+
+**Not tested:** GPS, charging behaviour, headphones, deep sleep / battery life, GApps.
+
+## Known bugs
+- **RIL / SIM: the SIM card is not detected**, so there are no calls, SMS or mobile data. The modem itself is fine;
+  Samsung's radio library (libsec-ril) fails to start on this ROM. Use it as a Wi-Fi-only device for now.
+- SELinux is permissive.
+- Debug boot logging is on: each boot writes kernel and Android logs to `/cache/bootlog` (useful for bug reports).
+- No OTA updates (OpenDelta), OmniJaws weather, OmniStyle or OmniSubs: their sources were deleted from GitHub.
+- The LineageOS-only extras (Snap camera, Doze, FlipFlap) are left out.
