@@ -1,0 +1,35 @@
+name: Publish one release, delete the others
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: "Release tag to keep and mark as Latest (all other releases and their tags are deleted)"
+        required: true
+        default: "omni-7.1.2-j5xnlte-31"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      R: repos/${{ github.repository }}
+      KEEP: ${{ inputs.keep }}
+    steps:
+      - name: Mark the kept release as Released (Latest)
+        run: |
+          id=$(gh api "$R/releases/tags/$KEEP" -q .id) || { echo "::error::No release with tag $KEEP"; exit 1; }
+          gh api -X PATCH "$R/releases/$id" -F prerelease=false -f make_latest=true -q '"\(.tag_name): prerelease=\(.prerelease)"'
+
+      - name: Delete every other release and its tag
+        run: |
+          gh api "$R/releases?per_page=100" --paginate -q ".[]|select(.tag_name!=\"$KEEP\")|\"\(.id) \(.tag_name)\"" |
+          while read id tag; do
+            gh api -X DELETE "$R/releases/$id"
+            gh api -X DELETE "$R/git/refs/tags/$tag" || true
+            echo "deleted $tag" | tee -a $GITHUB_STEP_SUMMARY
+          done
+          echo "kept $KEEP" >> $GITHUB_STEP_SUMMARY
