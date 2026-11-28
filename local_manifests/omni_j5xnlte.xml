@@ -14,11 +14,14 @@
        the rest are optional extras and are dropped. -->
   <remove-project name="android_packages_apps_OmniGears" />
   <project path="packages/apps/OmniGears" name="Dark-OS/android_packages_apps_OmniGears" remote="gh" revision="android-7.1" />
+  <!-- omni-security mirrors Omni's last android-7.1 OmniClock (OmniClockOSS) and OmniSwitch -->
   <remove-project name="android_packages_apps_OmniClock" />
+  <project path="packages/apps/OmniClock"  name="omni-security/android_packages_apps_OmniClock"  remote="gh" revision="android-7.1" />
   <remove-project name="android_packages_services_OmniJaws" />
   <remove-project name="android_packages_apps_OmniSubs" />
   <remove-project name="android_packages_apps_OmniStyle" />
   <remove-project name="android_packages_apps_OmniSwitch" />
+  <project path="packages/apps/OmniSwitch" name="omni-security/android_packages_apps_OmniSwitch" remote="gh" revision="android-7.1" />
   <remove-project name="android_packages_apps_OpenDelta" />
 
   <!-- Omni's stock HALs have no msm8916 support: swap in LineageOS CAF msm8916 HALs at the same paths -->

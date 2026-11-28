@@ -80,6 +80,10 @@ jobs:
       - name: Apply port patches
         run: cd src && PORT_DIR=$GITHUB_WORKSPACE/port bash ../port/scripts/patch-sources.sh
 
+      - name: Download bundled apps (Amaze, Brevent)
+        continue-on-error: true
+        run: cd src && bash ../port/scripts/fetch-apps.sh | tee -a $GITHUB_STEP_SUMMARY
+
       - name: Bundle OmniROM wallpapers
         continue-on-error: true
         run: |
@@ -114,6 +118,15 @@ jobs:
             | tee ril-symbols.txt
           [ "${PIPESTATUS[0]}" = 0 ] || { echo "::error::$(grep -v 'closure checked' ril-symbols.txt | head -5 | tr '\n' ' ')"; exit 1; }
           ls src/out/target/product/j5xnlte/system/app/WallpaperPicker/WallpaperPicker.apk || { echo "::error::WallpaperPicker not built into system"; exit 1; }
+          P=src/out/target/product/j5xnlte/system
+          for a in OmniSwitch OmniClockOSS messaging; do
+            ls $P/app/$a/$a.apk $P/priv-app/$a/$a.apk 2>/dev/null | grep -q . || { echo "::error::$a not built into system"; exit 1; }
+          done
+          for a in Amaze Brevent; do
+            if [ -f src/device/samsung/j5xnlte/preinstall/$a.apk.pre ]; then
+              [ -f $P/preinstall/$a.apk.pre ] || { echo "::error::$a downloaded but not in /system/preinstall"; exit 1; }
+            else echo "::warning::$a was not downloaded, so it is not bundled"; fi
+          done
           for f in install/bin/run_scripts.sh install/bin/functions.sh boot.img; do
             unzip -l "$Z" | grep -q " $f$" || { echo "::error::$f missing from $Z"; exit 1; }
           done

@@ -1,0 +1,10 @@
+# Install the bundled user apps (Amaze, Brevent) once Android has booted.
+on property:sys.boot_completed=1
+    start preinstall_apps
+
+service preinstall_apps /system/bin/sh /system/bin/preinstall-apps.sh
+    user root
+    group root
+    seclabel u:r:shell:s0
+    disabled
+    oneshot

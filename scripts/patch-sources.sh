@@ -149,7 +149,7 @@ rm -f vendor/samsung/j5-common/proprietary/etc/T13QL_s5k3l2xx_module_info.xml
 sed -i '/T13QL_s5k3l2xx_module_info.xml/d' vendor/samsung/j5-common/j5-common-vendor.mk
 
 echo ">> Dropping Omni apps whose source no longer exists on GitHub"
-sed -i -E '/^\s*(OpenDelta|OmniSwitch|OmniJaws|OmniStyle|OmniClockOSS|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
+sed -i -E '/^\s*(OpenDelta|OmniJaws|OmniStyle|OmniSubs)\s*\\?\s*$/d' vendor/omni/config/packages.mk
 
 echo ">> Telephony: let Omni load ro.telephony.ril_class (SamsungQcomRIL)"
 TEL=frameworks/opt/telephony

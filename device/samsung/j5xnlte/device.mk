@@ -42,3 +42,16 @@ PRODUCT_COPY_FILES += \
 # Omni 7.1 only installs it via OmniStyle, whose source is gone.
 PRODUCT_PACKAGES += \
     WallpaperPicker
+
+# Extra apps: OmniSwitch and OmniClockOSS (Omni 7.1 sources), AOSP Messaging
+PRODUCT_PACKAGES += \
+    OmniSwitch \
+    OmniClockOSS \
+    messaging
+
+# Amaze and Brevent (official APKs, scripts/fetch-apps.sh): installed once on
+# first boot as normal user apps, so they can be updated or uninstalled
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/preinstall/preinstall-apps.rc:system/etc/init/preinstall-apps.rc \
+    $(LOCAL_PATH)/preinstall/preinstall-apps.sh:system/bin/preinstall-apps.sh \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/preinstall/*.apk.pre),$(f):system/preinstall/$(notdir $(f)))
