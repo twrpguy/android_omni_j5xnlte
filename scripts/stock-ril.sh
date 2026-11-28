@@ -73,19 +73,27 @@ if [ ! -s out/libsec-ril.so ]; then sudo umount mnt; fail "libsec-ril.so not fou
 # Pull every library in the stock RIL's dependency chain (recursively) that the
 # ROM doesn't already build or ship; take it from the stock system.
 provided=$WORK/provided.txt
+# Only what this device actually builds/ships: other devices' vendor blobs and
+# prebuilt modules in the shared vendor repos must not count.
+OURVENDOR="$TOP/vendor/samsung/msm8916-common $TOP/vendor/samsung/j5-common $TOP/vendor/samsung/j5nlte $TOP/vendor/samsung-j5x/j5x-common $TOP/vendor/samsung-j5x/j5xnlte"
 {
   # modules built from source
   grep -rhoE --include=Android.mk 'LOCAL_MODULE *:?= *lib[A-Za-z0-9_+.-]+' \
        "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" \
-       "$TOP/device" "$TOP/vendor" "$TOP/libcore" "$TOP/art" "$TOP/bootable" 2>/dev/null \
+       "$TOP/device/samsung/msm8916-common" "$TOP/device/samsung/j5-common" \
+       "$TOP/device/samsung/qcom-common" "$TOP/device/qcom" "$TOP/vendor/omni" "$TOP/vendor/qcom" \
+       "$TOP/libcore" "$TOP/art" "$TOP/bootable" $OURVENDOR 2>/dev/null \
     | sed -E 's/.*= *//'
   grep -rhoE --include=Android.bp 'name: *"lib[A-Za-z0-9_+.-]+"' \
        "$TOP/bionic" "$TOP/system" "$TOP/frameworks" "$TOP/external" "$TOP/hardware" "$TOP/art" 2>/dev/null \
     | sed -E 's/.*"(.*)"/\1/'
-  # prebuilt blobs copied into /system/lib
-  grep -rhoE ':system/(vendor/)?lib/lib[^ \\]+\.so' "$TOP/vendor/samsung" "$TOP/vendor/samsung-j5x" --include='*.mk' 2>/dev/null \
+  # prebuilt blobs this device copies into /system/lib
+  grep -hoE ':system/(vendor/)?lib/lib[^ \\]+\.so' $(find $OURVENDOR -maxdepth 1 -name '*-vendor.mk' 2>/dev/null) 2>/dev/null \
     | sed -E 's#.*/##; s/\.so$//'
 } | sed -E 's/\.so$//' | sort -u > "$provided"
+for l in libfloatingfeature libsecnativefeature; do
+  grep -qx "$l" "$provided" && say "  note: $l counted as provided by this device"
+done
 say "  $(wc -l < "$provided") libraries provided by the ROM"
 
 queue="libsec-ril.so libsec-ril-dsds.so"; seen=" "
