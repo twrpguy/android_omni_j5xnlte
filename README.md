@@ -25,9 +25,9 @@ Set the target to `bootimage` to test only the kernel and boot image, which is m
 
 ## Status
 **Works:** boot, Wi-Fi, Bluetooth, audio (speaker, earpiece, microphone), both cameras, auto-rotation, sensors,
-wallpapers (OmniROM's own), OmniSwitch, Clock (OmniClockOSS), Messaging, Amaze (installed on first boot).
+wallpapers (OmniROM's own), OmniSwitch, Clock (OmniClockOSS), Messaging, charging, Amaze (installed on first boot).
 
-**Not tested:** GPS, charging behaviour, headphones, deep sleep / battery life, GApps.
+**Not tested:** GPS, headphones, deep sleep / battery life, GApps.
 
 ## Known bugs
 - **RIL / SIM: the SIM card is not detected**, so there are no calls, SMS or mobile data. The modem itself is fine;
